@@ -9,7 +9,7 @@ const colors = {
   Done: "bg-pink-300",
 };
 
-export default function TaskColumn({ status, tasks }) {
+export default function TaskColumn({ status, tasks, editTask, removeTask }) {
   const { setNodeRef, isOver } = useDroppable({ id: status });
 
   return (
@@ -20,7 +20,12 @@ export default function TaskColumn({ status, tasks }) {
     >
       <h3 className="text-xl font-semibold mb-4 text-gray-700">{status}</h3>
       {tasks.map((task) => (
-        <TaskCard key={task.id} task={task} />
+        <TaskCard
+          key={task.id}
+          task={task}
+          editTask={editTask}
+          removeTask={removeTask}
+        />
       ))}
     </div>
   );

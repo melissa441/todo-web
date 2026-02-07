@@ -1,7 +1,5 @@
 // src/context/AuthContext.jsx
 import { createContext, useContext, useEffect, useState } from "react";
-import { auth } from "../firebase";
-import { onAuthStateChanged } from "firebase/auth";
 
 const AuthContext = createContext();
 
@@ -10,30 +8,48 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Listen to user login/logout
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      console.log("Auth state changed:", currentUser);
-      if (currentUser) {
-        // Set the actual Firebase user object
-        setUser({
-          id: currentUser.uid, // Use Firebase UID
-          uid: currentUser.uid, // Also keep uid for compatibility
-          email: currentUser.email,
-          name: currentUser.displayName || currentUser.email?.split('@')[0] || "User",
-          avatar: currentUser.photoURL || `https://i.pravatar.cc/40?u=${currentUser.uid}`,
-        });
-      } else {
-        setUser(null);
-      }
-      setLoading(false);
-    });
+    // Check local storage for existing session
+    const savedUserId = localStorage.getItem("userId");
+    if (savedUserId) {
+      try {
+        const uid = JSON.parse(savedUserId);
+        const users = JSON.parse(localStorage.getItem("users") || "[]");
+        const foundUser = users.find(u => u.uid === uid);
 
-    return () => unsubscribe();
+        if (foundUser) {
+          setUser({
+            id: foundUser.uid,
+            uid: foundUser.uid,
+            email: foundUser.email,
+            name: foundUser.name,
+            avatar: foundUser.avatar || `https://i.pravatar.cc/40?u=${foundUser.uid}`,
+          });
+        } else {
+          localStorage.removeItem("userId");
+        }
+      } catch (e) {
+        console.error("Error parsing local session:", e);
+        localStorage.removeItem("userId");
+      }
+    }
+    setLoading(false);
   }, []);
+
+  const login = (userData) => {
+    localStorage.setItem("userId", JSON.stringify(userData.uid));
+    setUser(userData);
+  };
+
+  const logout = () => {
+    localStorage.removeItem("userId");
+    setUser(null);
+  };
 
   const value = {
     user,
-    loading
+    loading,
+    login,
+    logout
   };
 
   return (
