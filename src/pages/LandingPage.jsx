@@ -54,7 +54,7 @@ export default function LandingPage() {
 
           <p className="flex items-center text-gray-700">
             <MapPin className="w-5 h-5 text-pink-500 mr-2" />
-            Based in Kigali, Rwanda 🌍
+            Based in Kigali, Rwanda 
           </p>
 
           {/* ✅ Using Button components */}
