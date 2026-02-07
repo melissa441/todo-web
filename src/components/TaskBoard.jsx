@@ -19,7 +19,8 @@ const statuses = ["To-Do", "In Progress", "Done"];
 
 export default function TaskBoard() {
   const { user } = useAuth();
-  const [newTaskTitle, setNewTaskTitle] = useState("");
+  const [newTaskHead, setNewTaskHead] = useState("");
+  const [newTaskBody, setNewTaskBody] = useState("");
   const [loading, setLoading] = useState(true);
   const [tasks, setTasks] = useState([]);
 
@@ -64,11 +65,12 @@ export default function TaskBoard() {
   };
 
   const addTask = () => {
-    if (!newTaskTitle.trim() || !user?.id) return;
+    if (!newTaskHead.trim() || !user?.id) return;
 
     const newTask = {
       id: Date.now().toString(),
-      title: newTaskTitle.trim(),
+      head: newTaskHead.trim(),
+      body: newTaskBody.trim(),
       status: "To-Do",
       userId: user.id,
       createdAt: new Date().toISOString(),
@@ -78,24 +80,44 @@ export default function TaskBoard() {
     const updatedTasks = [...tasks, newTask];
     setTasks(updatedTasks);
     saveTasksToLocal(updatedTasks);
-    setNewTaskTitle("");
+    setNewTaskHead("");
+    setNewTaskBody("");
+    toast.success("Task added!");
+  };
+
+  const completeTask = (id) => {
+    const updatedTasks = tasks.map((task) =>
+      task.id === id ? { ...task, status: "Done", updatedAt: new Date().toISOString() } : task
+    );
+    setTasks(updatedTasks);
+    saveTasksToLocal(updatedTasks);
+    toast.success("Task marked as Done!");
   };
 
   const removeTask = (id) => {
-    const updatedTasks = tasks.filter((task) => task.id !== id);
-    setTasks(updatedTasks);
-    saveTasksToLocal(updatedTasks);
+    if (window.confirm("Are you sure you want to delete this task?")) {
+      const updatedTasks = tasks.filter((task) => task.id !== id);
+      setTasks(updatedTasks);
+      saveTasksToLocal(updatedTasks);
+      toast.info("Task removed.");
+    }
   };
 
   const editTask = (id) => {
     const task = tasks.find((t) => t.id === id);
     if (!task) return;
 
-    const newTitle = prompt("Edit task title:", task.title);
-    if (newTitle && newTitle.trim() !== task.title) {
-      const updatedTitle = newTitle.trim();
+    const newHead = prompt("Edit task title (Head):", task.head);
+    const newBody = prompt("Edit task description (Body):", task.body);
+
+    if (newHead !== null || newBody !== null) {
       const updatedTasks = tasks.map((t) =>
-        t.id === id ? { ...t, title: updatedTitle, updatedAt: new Date().toISOString() } : t
+        t.id === id ? {
+          ...t,
+          head: newHead !== null ? newHead.trim() : t.head,
+          body: newBody !== null ? newBody.trim() : t.body,
+          updatedAt: new Date().toISOString()
+        } : t
       );
       setTasks(updatedTasks);
       saveTasksToLocal(updatedTasks);
@@ -113,8 +135,10 @@ export default function TaskBoard() {
   return (
     <div className="p-6 min-h-screen bg-gradient-to-br from-pink-50 to-white">
       <AddTaskForm
-        newTaskTitle={newTaskTitle}
-        setNewTaskTitle={setNewTaskTitle}
+        newTaskHead={newTaskHead}
+        setNewTaskHead={setNewTaskHead}
+        newTaskBody={newTaskBody}
+        setNewTaskBody={setNewTaskBody}
         addTask={addTask}
       />
 
@@ -123,7 +147,7 @@ export default function TaskBoard() {
         collisionDetection={closestCenter}
         onDragEnd={handleDragEnd}
       >
-        <div className="flex gap-6 justify-center">
+        <div className="flex flex-col md:flex-row gap-6 justify-center max-w-7xl mx-auto">
           {statuses.map((status) => {
             const statusTasks = tasks.filter((t) => t.status === status);
             return (
@@ -137,6 +161,7 @@ export default function TaskBoard() {
                   tasks={statusTasks}
                   editTask={editTask}
                   removeTask={removeTask}
+                  completeTask={completeTask}
                 />
               </SortableContext>
             );
